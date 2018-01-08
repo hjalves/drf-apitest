@@ -9,11 +9,13 @@ from drf_apitests.metaclass import make_test_class
 class CustomTestLoader(TestLoader):
     def discover(self, start_dir, pattern='api/tests/*.yaml',
                  top_level_dir=None):
+
+        top_level_dir = top_level_dir or start_dir
         test_suite = APITestSuite(top_level_dir, start_dir, pattern)
 
-        for doc in test_suite.discover():
-            klass = make_test_class(doc)
-            yield self.suiteClass(klass(test.slug) for test in doc.tests)
+        for test_doc in test_suite.discover():
+            klass = make_test_class(test_doc)
+            yield self.suiteClass(klass(test.slug) for test in test_doc.tests)
 
 
 class APITestRunner(DiscoverRunner):

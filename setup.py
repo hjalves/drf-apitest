@@ -19,10 +19,10 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
     ],
-    keywords='venvui',
+    keywords='drf api testing',
     packages=find_packages(),
     install_requires=[
-        'Django',
+        'Django>=1.9',
         'djangorestframework',
         'djangorestframework-jwt',
         'PyYAML'
