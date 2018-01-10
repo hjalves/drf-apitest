@@ -12,10 +12,17 @@ class CustomTestLoader(TestLoader):
 
         top_level_dir = top_level_dir or start_dir
         test_suite = APITestSuite(top_level_dir, start_dir, pattern)
-
+        tests = []
+        # Discover API tests
         for test_doc in test_suite.discover():
             klass = make_test_class(test_doc)
-            yield self.suiteClass(klass(test.slug) for test in test_doc.tests)
+            tests.extend(klass(test.slug) for test in test_doc.tests)
+        # Discover standard unit tests
+        # TODO: pattern should not be hardcoded
+        unit_tests = super().discover(start_dir, pattern='test*.py',
+                                      top_level_dir=None)
+        tests.extend(unit_tests)
+        return self.suiteClass(tests)
 
 
 class APITestRunner(DiscoverRunner):
