@@ -1,4 +1,5 @@
 from pathlib import Path
+from collections import Mapping
 
 import yaml
 from django.utils.text import slugify
@@ -60,7 +61,8 @@ class APITestDocument:
 
 
 class APITestCase:
-    def __init__(self, parent, name, url, url_vars, method, params, skip):
+    def __init__(self, parent, name, url, url_vars, method, params, skip,
+                 assert_equal):
         self.parent = parent
         self.name = name
         self.url = url
@@ -68,6 +70,7 @@ class APITestCase:
         self.method = method
         self.params = params
         self.skip = skip
+        self.assert_equal = assert_equal
         self.slug = slugify(name).replace('-', '_')
         assert self.method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE'), \
             f"invalid method '{self.method}'"
@@ -94,8 +97,12 @@ class APITestCase:
         method = mapping['method']
         params = mapping.get('params', {})
         skip = mapping.get('skip', [])
+        assert_equal = mapping.get('assert', [])
+        if isinstance(assert_equal, Mapping):
+            assert_equal = [assert_equal]
         # TODO: test types
-        return cls(parent, name, url, url_vars, method, params, skip)
+        return cls(parent, name, url, url_vars, method, params, skip,
+                   assert_equal)
 
     @property
     def full_url(self):
@@ -107,3 +114,30 @@ class APITestCase:
         for key, value in self.url_vars.items():
             url = url.replace(':' + key, str(value))
         return url
+
+    def assert_statements(self):
+        for statement in self.assert_equal:
+            if isinstance(statement, Mapping):
+                for first, second in statement.items():
+                    yield AssertStatement(repr(self), first, second)
+            else:
+                yield AssertStatement(repr(self), statement)
+
+
+class AssertStatement:
+    def __init__(self, filename, first, second=True):
+        self.filename = filename
+        self.first = str(first)
+        self._first_compiled = compile(self.first, self.filename, 'eval')
+        self.second = second
+
+    def do_assertion(self, unit_test, **locals):
+        first_val = eval(self._first_compiled, {}, locals)
+        second_val = self.second
+        if second_val is True and not first_val:
+            unit_test.fail(f'{self.first}')
+        else:
+            unit_test.assertEqual(
+                first_val, second_val,
+                msg=f'{self.first}: expected {second_val}, got {first_val}'
+            )
