@@ -27,21 +27,7 @@ def make_test_func(test):
         request = getattr(self.client, test.method.lower())
         response = request(test.interpolated_url, data=test.params,
                            format='json')
-
-        statements = list(test.assert_statements())
-        if not statements:
-            msg = f"Unexpected HTTP response ({response.status_code}): " \
-                  f"{response.content}"
-            success = (status.HTTP_200_OK, status.HTTP_201_CREATED,
-                       status.HTTP_204_NO_CONTENT)
-            self.assertIn(response.status_code, success, msg)
-
-        for statement in test.assert_statements():
-            statement.do_assertion(self,
-                                   response=response,
-                                   body=response.data,
-                                   status=response.status_code)
-
+        test.perform_assertions(self, response)
         log_to_output_file(test, response)
 
     test_func.__name__ = test.slug

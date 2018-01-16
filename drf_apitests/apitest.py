@@ -115,24 +115,35 @@ class APITestCase:
             url = url.replace(':' + key, str(value))
         return url
 
-    def assert_statements(self):
+    def _assert_statements(self):
         for statement in self.assert_equal:
             if isinstance(statement, Mapping):
                 for first, second in statement.items():
-                    yield AssertStatement(repr(self), first, second)
+                    yield APITestAssertStatement(repr(self), first, second)
             else:
-                yield AssertStatement(repr(self), statement)
+                yield APITestAssertStatement(repr(self), statement)
+
+    def perform_assertions(self, unit_test, response):
+        statements = list(self._assert_statements())
+        if not statements:
+            msg = f"Unexpected HTTP response ({response.status_code}): " \
+                  f"{response.content}"
+            unit_test.assertIn(response.status_code, (200, 201, 204), msg)
+        for statement in statements:
+            statement.do_assertion(unit_test, response=response,
+                                   body=response.data,
+                                   status=response.status_code)
 
 
-class AssertStatement:
+class APITestAssertStatement:
     def __init__(self, filename, first, second=True):
         self.filename = filename
         self.first = str(first)
         self._first_compiled = compile(self.first, self.filename, 'eval')
         self.second = second
 
-    def do_assertion(self, unit_test, **locals):
-        first_val = eval(self._first_compiled, {}, locals)
+    def do_assertion(self, unit_test, **variables):
+        first_val = eval(self._first_compiled, {}, variables)
         second_val = self.second
         if second_val is True and not first_val:
             unit_test.fail(f'{self.first}')
