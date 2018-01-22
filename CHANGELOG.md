@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1a4 (2018-01-22)
+
+- Log SQL queries
+
 ## 0.1a3 (2018-01-16)
 
 - Tests can now have custom assert statements

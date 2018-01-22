@@ -125,14 +125,14 @@ class APITestCase:
 
     def perform_assertions(self, unit_test, response):
         statements = list(self._assert_statements())
+        body = response.content and response.json()
         if not statements:
             msg = f"Unexpected HTTP response ({response.status_code}): " \
                   f"{response.content}"
             unit_test.assertIn(response.status_code, (200, 201, 204), msg)
         for statement in statements:
             statement.do_assertion(unit_test, response=response,
-                                   body=response.data,
-                                   status=response.status_code)
+                                   body=body, status=response.status_code)
 
 
 class APITestAssertStatement:
@@ -145,10 +145,11 @@ class APITestAssertStatement:
     def do_assertion(self, unit_test, **variables):
         first_val = eval(self._first_compiled, {}, variables)
         second_val = self.second
-        if second_val is True and not first_val:
-            unit_test.fail(f'{self.first}')
+        if second_val is True:
+            if not first_val:
+                unit_test.fail(f'{self.first}')
         else:
             unit_test.assertEqual(
                 first_val, second_val,
-                msg=f'{self.first}: expected {second_val}, got {first_val}'
+                msg=f'{self.first}: expected {second_val!r}, got {first_val!r}'
             )
