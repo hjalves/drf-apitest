@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='drf-apitests',
-    version='0.1a3',
+    version='0.1a4',
     description='API testing tools for Django REST Framework',
     url='https://github.com/hjalves/drf-apitests',
     author='Humberto Alves',
